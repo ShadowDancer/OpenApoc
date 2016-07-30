@@ -5,6 +5,9 @@
 #include "game/state/city/projectile.h"
 #include "game/state/city/vehiclemission.h"
 #include "game/state/city/vequipment.h"
+#include "game/state/equipment/equipmentusertype.h"
+#include "game/state/equipment/store/baseequipmentstore.h"
+#include "game/state/equipment/store/lockedequipmentstore.h"
 #include "game/state/organisation.h"
 #include "game/state/rules/vequipment_type.h"
 #include "game/state/tileview/tileobject_shadow.h"
@@ -17,17 +20,18 @@
 
 namespace OpenApoc
 {
-
 template <> const UString &StateObject<Vehicle>::getPrefix()
 {
 	static UString prefix = "VEHICLE_";
 	return prefix;
 }
+
 template <> const UString &StateObject<Vehicle>::getTypeName()
 {
 	static UString name = "Vehicle";
 	return name;
 }
+
 template <>
 const UString &StateObject<Vehicle>::getId(const GameState &state, const sp<Vehicle> ptr)
 {
@@ -45,10 +49,12 @@ class FlyingVehicleMover : public VehicleMover
 {
   public:
 	Vec3<float> goalPosition;
+
 	FlyingVehicleMover(Vehicle &v, Vec3<float> initialGoal)
 	    : VehicleMover(v), goalPosition(initialGoal)
 	{
 	}
+
 	void update(GameState &state, unsigned int ticks) override
 	{
 		float speed = vehicle.getSpeed();
@@ -129,10 +135,9 @@ class FlyingVehicleMover : public VehicleMover
 VehicleMover::VehicleMover(Vehicle &v) : vehicle(v) {}
 
 VehicleMover::~VehicleMover() = default;
-
 Vehicle::Vehicle()
     : attackMode(AttackMode::Standard), altitude(Altitude::Standard), position(0, 0, 0),
-      velocity(0, 0, 0), facing(1, 0, 0), health(0), shield(0), shieldRecharge(0)
+      velocity(0, 0, 0), facing(1, 0, 0), health(0), shield(0), shieldRecharge(0), equipment(this)
 {
 }
 
@@ -207,7 +212,6 @@ void Vehicle::setupMover()
 void Vehicle::update(GameState &state, unsigned int ticks)
 
 {
-
 	if (!this->missions.empty())
 		this->missions.front()->update(state, *this, ticks);
 	while (!this->missions.empty() && this->missions.front()->isFinished(state, *this))
@@ -249,13 +253,11 @@ void Vehicle::update(GameState &state, unsigned int ticks)
 		}
 
 		bool has_active_weapon = false;
-		for (auto &equipment : this->equipment)
+		for (auto &item : equipment.weapons())
 		{
-			if (equipment->type->type != VEquipmentType::Type::Weapon)
-				continue;
-			equipment->update(ticks);
+			item->update(ticks);
 			if (!this->isCrashed() && this->attackMode != Vehicle::AttackMode::Evasive &&
-			    equipment->canFire())
+			    item->canFire())
 			{
 				has_active_weapon = true;
 			}
@@ -312,22 +314,23 @@ bool Vehicle::applyDamage(GameState &state, int damage, float armour)
 			damage -= this->shield;
 			this->shield = 0;
 
+			std::list<sp<VEquipment>> shieldModules;
+
 			// destroy the shield modules
-			for (auto it = this->equipment.begin(); it != this->equipment.end();)
+			for (auto &item : equipment.general())
 			{
-				if ((*it)->type->type == VEquipmentType::Type::General &&
-				    (*it)->type->shielding > 0)
+				if (item->type->shielding > 0)
 				{
-					it = this->equipment.erase(it);
+					shieldModules.push_back(item);
 				}
-				else
-				{
-					++it;
-				}
+			}
+			for (auto &itemToRemove : shieldModules)
+			{
+				equipment.removeEquipment(itemToRemove);
 			}
 		}
 
-		damage -= armour;
+		damage -= static_cast<int>(armour);
 		if (damage > 0)
 		{
 			this->health -= damage;
@@ -460,17 +463,16 @@ void Vehicle::attackTarget(GameState &state, sp<TileObjectVehicle> vehicleTile,
 	auto target = enemyTile->getCentrePosition();
 	float distance = this->tileObject->getDistanceTo(enemyTile);
 
-	for (auto &equipment : this->equipment)
+	for (auto &item : equipment.weapons())
 	{
-		if (equipment->type->type != VEquipmentType::Type::Weapon)
+		if (!item->canFire())
+		{
 			continue;
-		if (equipment->canFire() == false)
-			continue;
-
-		if (distance <= equipment->getRange())
+		}
+		if (distance <= item->getRange())
 		{
 			std::uniform_int_distribution<int> toHit(1, 99);
-			int accuracy = 100 - equipment->type->accuracy + this->getAccuracy();
+			int accuracy = 100 - item->type->accuracy + this->getAccuracy();
 			int shotDiff = toHit(state.rng);
 
 			if (shotDiff > accuracy)
@@ -482,7 +484,7 @@ void Vehicle::attackTarget(GameState &state, sp<TileObjectVehicle> vehicleTile,
 				target.z += offsetRng(state.rng) / 2;
 			}
 
-			auto projectile = equipment->fire(target);
+			auto projectile = item->fire(target);
 			if (projectile)
 			{
 				vehicleTile->map.addObjectToMap(projectile);
@@ -499,14 +501,11 @@ void Vehicle::attackTarget(GameState &state, sp<TileObjectVehicle> vehicleTile,
 float Vehicle::getFiringRange() const
 {
 	float range = 0;
-	for (auto &equipment : this->equipment)
+	for (auto &item : equipment.weapons())
 	{
-		if (equipment->type->type != VEquipmentType::Type::Weapon)
-			continue;
-
-		if (range < equipment->getRange())
+		if (range < item->getRange())
 		{
-			range = equipment->getRange();
+			range = item->getRange();
 		}
 	}
 	return range;
@@ -550,33 +549,63 @@ float Vehicle::getSpeed() const
 	// FIXME: This is somehow modulated by weight?
 	float speed = this->type->top_speed;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.general())
 	{
-		if (e->type->type != VEquipmentType::Type::Engine)
-			continue;
-		speed += e->type->top_speed;
+		speed += item->type->top_speed;
 	}
 
 	return speed;
 }
 
-int Vehicle::getMaxConstitution() const { return this->getMaxHealth() + this->getMaxShield(); }
+std::map<UString, UString> Vehicle::getStats()
+{
+	int constitution = getConstitution();
+	int maxConstitution = getMaxConstitution();
+	UString constitutionString;
 
-int Vehicle::getConstitution() const { return this->getHealth() + this->getShield(); }
+	if (constitution != maxConstitution)
+	{
+		constitutionString = UString::format("%d/%d", constitution, maxConstitution);
+	}
+	else
+	{
+		constitutionString = UString::format("%d", maxConstitution);
+	}
 
-int Vehicle::getMaxHealth() const { return this->type->health; }
+	return {
+	    {"Constitution", constitutionString},
+	    {"Armor", UString::format("%d", getArmor())},
+	    {"Accuracy", UString::format("%d%%", getAccuracy())},
+	    {"Top Speed", UString::format("%d", getTopSpeed())},
+	    {"Acceleration", UString::format("%d", getAcceleration())},
+	    {"Weight", UString::format("%d", getWeight())},
+	    {"Fuel", UString::format("%d", getFuel())},
+	    {"Passengers", UString::format("%d/%d", getPassengers(), getMaxPassengers())},
+	    {"Cargo", UString::format("%d/%d", getCargo(), getMaxCargo())},
+	};
+}
 
-int Vehicle::getHealth() const { return this->health; }
+int Vehicle::getMaxConstitution() const
+{
+	return static_cast<int>(this->getMaxHealth() + this->getMaxShield());
+}
+
+int Vehicle::getConstitution() const
+{
+	return static_cast<int>(this->getHealth() + this->getShield());
+}
+
+int Vehicle::getMaxHealth() const { return static_cast<int>(this->type->health); }
+
+int Vehicle::getHealth() const { return static_cast<int>(this->health); }
 
 int Vehicle::getMaxShield() const
 {
 	int maxShield = 0;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.general())
 	{
-		if (e->type->type != VEquipmentType::Type::General)
-			continue;
-		maxShield += e->type->shielding;
+		maxShield += item->type->shielding;
 	}
 
 	return maxShield;
@@ -590,7 +619,7 @@ int Vehicle::getArmor() const
 	// FIXME: Check this the sum of all directions
 	for (auto &armorDirection : this->type->armour)
 	{
-		armor += armorDirection.second;
+		armor += static_cast<int>(armorDirection.second);
 	}
 	return armor;
 }
@@ -600,18 +629,18 @@ int Vehicle::getAccuracy() const
 	int accuracy = 0;
 	std::priority_queue<int> accModifiers;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.general())
 	{
-		if (e->type->type != VEquipmentType::Type::General || e->type->accuracy_modifier <= 0)
+		if (item->type->accuracy_modifier <= 0)
 			continue;
 		// accuracy percentages are inverted in the data (e.g. 10% module gives 90)
-		accModifiers.push(100 - e->type->accuracy_modifier);
+		accModifiers.push(100 - item->type->accuracy_modifier);
 	}
 
 	double moduleEfficiency = 1.0;
 	while (!accModifiers.empty())
 	{
-		accuracy += accModifiers.top() * moduleEfficiency;
+		accuracy += static_cast<int>(accModifiers.top() * moduleEfficiency);
 		moduleEfficiency /= 2;
 		accModifiers.pop();
 	}
@@ -619,19 +648,17 @@ int Vehicle::getAccuracy() const
 }
 
 // FIXME: Check int/float speed conversions
-int Vehicle::getTopSpeed() const { return this->getSpeed(); }
+int Vehicle::getTopSpeed() const { return static_cast<int>(this->getSpeed()); }
 
 int Vehicle::getAcceleration() const
 {
 	// FIXME: This is somehow related to enginer 'power' and weight
 	int weight = this->getWeight();
-	int acceleration = this->type->acceleration;
+	int acceleration = static_cast<int>(this->type->acceleration);
 	int power = 0;
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.engines())
 	{
-		if (e->type->type != VEquipmentType::Type::Engine)
-			continue;
-		power += e->type->power;
+		power += item->type->power;
 	}
 	if (weight == 0)
 	{
@@ -650,10 +677,11 @@ int Vehicle::getAcceleration() const
 
 int Vehicle::getWeight() const
 {
-	int weight = this->type->weight;
-	for (auto &e : this->equipment)
+	int weight = static_cast<int>(this->type->weight);
+
+	for (auto it = equipment.cbegin(); it != equipment.cend(); ++it)
 	{
-		weight += e->type->weight;
+		weight += static_cast<int>((*it)->type->weight);
 	}
 	if (weight == 0)
 	{
@@ -667,11 +695,9 @@ int Vehicle::getFuel() const
 	// Zero fuel is normal on some vehicles (IE ufos/'dimension-capable' xcom)
 	int fuel = 0;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.engines())
 	{
-		if (e->type->type != VEquipmentType::Type::Engine)
-			continue;
-		fuel += e->type->max_ammo;
+		fuel += item->type->max_ammo;
 	}
 
 	return fuel;
@@ -681,11 +707,9 @@ int Vehicle::getMaxPassengers() const
 {
 	int passengers = this->type->passengers;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.general())
 	{
-		if (e->type->type != VEquipmentType::Type::General)
-			continue;
-		passengers += e->type->passengers;
+		passengers += item->type->passengers;
 	}
 	return passengers;
 }
@@ -699,11 +723,9 @@ int Vehicle::getMaxCargo() const
 {
 	int cargo = 0;
 
-	for (auto &e : this->equipment)
+	for (auto &item : equipment.general())
 	{
-		if (e->type->type != VEquipmentType::Type::General)
-			continue;
-		cargo += e->type->cargo_space;
+		cargo += item->type->cargo_space;
 	}
 	return cargo;
 }
@@ -713,74 +735,7 @@ int Vehicle::getCargo() const
 	return 0;
 }
 
-bool Vehicle::canAddEquipment(Vec2<int> pos, StateRef<VEquipmentType> type) const
-{
-	Vec2<int> slotOrigin;
-	bool slotFound = false;
-	// Check the slot this occupies hasn't already got something there
-	for (auto &slot : this->type->equipment_layout_slots)
-	{
-		if (slot.bounds.within(pos))
-		{
-			slotOrigin = slot.bounds.p0;
-			slotFound = true;
-			break;
-		}
-	}
-	// If this was not within a slot fail
-	if (!slotFound)
-	{
-		return false;
-	}
-	// Check that the equipment doesn't overlap with any other and doesn't
-	// go outside a slot of the correct type
-	Rect<int> bounds{pos, pos + type->equipscreen_size};
-	for (auto &otherEquipment : this->equipment)
-	{
-		// Something is already in that slot, fail
-		if (otherEquipment->equippedPosition == slotOrigin)
-		{
-			return false;
-		}
-		Rect<int> otherBounds{otherEquipment->equippedPosition,
-		                      otherEquipment->equippedPosition +
-		                          otherEquipment->type->equipscreen_size};
-		if (otherBounds.intersects(bounds))
-		{
-			LogInfo("Equipping \"%s\" on \"%s\" at {%d,%d} failed: Intersects with other equipment",
-			        type->name.cStr(), this->name.cStr(), pos.x, pos.y);
-			return false;
-		}
-	}
-
-	// Check that this doesn't go outside a slot of the correct type
-	for (int y = 0; y < type->equipscreen_size.y; y++)
-	{
-		for (int x = 0; x < type->equipscreen_size.x; x++)
-		{
-			Vec2<int> slotPos = {x, y};
-			slotPos += pos;
-			bool validSlot = false;
-			for (auto &slot : this->type->equipment_layout_slots)
-			{
-				if (slot.bounds.within(slotPos) && slot.type == type->type)
-				{
-					validSlot = true;
-					break;
-				}
-			}
-			if (!validSlot)
-			{
-				LogInfo("Equipping \"%s\" on \"%s\" at {%d,%d} failed: No valid slot",
-				        type->name.cStr(), this->name.cStr(), pos.x, pos.y);
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-void Vehicle::addEquipment(GameState &state, Vec2<int> pos, StateRef<VEquipmentType> type)
+void Vehicle::addEquipment(GameState &state, Vec2<int> slotOrigin, StateRef<VEquipmentType> type)
 {
 	// We can't check this here, as some of the non-buyable vehicles have insane initial equipment
 	// layouts
@@ -789,73 +744,83 @@ void Vehicle::addEquipment(GameState &state, Vec2<int> pos, StateRef<VEquipmentT
 	//	LogError("Trying to add \"%s\" at {%d,%d} on vehicle \"%s\" failed", type.id.cStr(), pos.x,
 	//	         pos.y, this->name.cStr());
 	//}
-	Vec2<int> slotOrigin;
-	bool slotFound = false;
-	// Check the slot this occupies hasn't already got something there
-	for (auto &slot : this->type->equipment_layout_slots)
-	{
-		if (slot.bounds.within(pos))
-		{
-			slotOrigin = slot.bounds.p0;
-			slotFound = true;
-			break;
-		}
-	}
-	// If this was not within a slow fail
-	if (!slotFound)
-	{
-		LogError("Equipping \"%s\" on \"%s\" at {%d,%d} failed: No valid slot", type->name.cStr(),
-		         this->name.cStr(), pos.x, pos.y);
-		return;
-	}
-
 	switch (type->type)
 	{
-		case VEquipmentType::Type::Engine:
+		case VEquipmentType::VEquipmentClass::Engine:
 		{
 			auto engine = mksp<VEquipment>();
 			engine->type = type;
-			this->equipment.emplace_back(engine);
+			this->equipment.addEquipment(engine);
 			engine->equippedPosition = slotOrigin;
 			LogInfo("Equipped \"%s\" with engine \"%s\"", this->name.cStr(), type->name.cStr());
 			break;
 		}
-		case VEquipmentType::Type::Weapon:
+		case VEquipmentType::VEquipmentClass::Weapon:
 		{
 			auto thisRef = StateRef<Vehicle>(&state, shared_from_this());
 			auto weapon = mksp<VEquipment>();
 			weapon->type = type;
 			weapon->owner = thisRef;
 			weapon->ammo = type->max_ammo;
-			this->equipment.emplace_back(weapon);
+			this->equipment.addEquipment(weapon);
 			weapon->equippedPosition = slotOrigin;
 			LogInfo("Equipped \"%s\" with weapon \"%s\"", this->name.cStr(), type->name.cStr());
 			break;
 		}
-		case VEquipmentType::Type::General:
+		case VEquipmentType::VEquipmentClass::General:
 		{
 			auto equipment = mksp<VEquipment>();
 			equipment->type = type;
 			LogInfo("Equipped \"%s\" with general equipment \"%s\"", this->name.cStr(),
 			        type->name.cStr());
 			equipment->equippedPosition = slotOrigin;
-			this->equipment.emplace_back(equipment);
+			this->equipment.addEquipment(equipment);
 			break;
 		}
 		default:
 			LogError("Equipment \"%s\" for \"%s\" at pos (%d,%d} has invalid type",
-			         type->name.cStr(), this->name.cStr(), pos.x, pos.y);
+			         type->name.cStr(), this->name.cStr(), slotOrigin.x, slotOrigin.y);
 	}
 }
 
 void Vehicle::removeEquipment(sp<VEquipment> object)
 {
-	this->equipment.remove(object);
+	this->equipment.removeEquipment(object);
 	// TODO: Any other variable values here?
 	// Clamp shield
 	if (this->shield > this->getMaxShield())
 	{
 		this->shield = this->getMaxShield();
+	}
+}
+
+std::list<EquipmentSlot> Vehicle::getEquipmentSlots() { return type->equipment_layout_slots; }
+
+sp<Image> Vehicle::getEqScreenBackgound() const { return type->equipment_screen; }
+
+sp<Image> Vehicle::getImage() const { return type->equip_icon_big; }
+
+sp<Image> Vehicle::getImageSmall() const { return type->equip_icon_small; }
+
+const UString &Vehicle::getName() const { return name; }
+
+const UString &Vehicle::getTName() const { return type->name; }
+
+Inventory &Vehicle::getInventory() { return equipment; }
+
+const EquipmentUserType Vehicle::getUserType() const
+{
+	switch (type->type)
+	{
+		case VehicleType::Type::Flying:
+			return EquipmentUserType::Air;
+		case VehicleType::Type::Ground:
+			return EquipmentUserType::Ground;
+		default:
+			LogError(
+			    "Trying to draw equipment screen of unsupported vehicle type for vehicle \"%s\"",
+			    getName().cStr());
+			return EquipmentUserType::Air;
 	}
 }
 
@@ -880,6 +845,24 @@ template <> sp<Vehicle> StateObject<Vehicle>::get(const GameState &state, const 
 		return nullptr;
 	}
 	return it->second;
+}
+
+sp<EquipmentStore> Vehicle::getStore(sp<GameState> state)
+{
+	StateRef<Base> base = nullptr;
+	for (auto &b : state->player_bases)
+	{
+		if (b.second->building == this->currentlyLandedBuilding)
+			base = {state.get(), b.first};
+	}
+
+	if (base != nullptr)
+	{
+		return std::static_pointer_cast<EquipmentStore>(mksp<BaseEquipmentStore>(base, state));
+	}
+
+	// airbone or non-base building
+	return std::static_pointer_cast<EquipmentStore>(mksp<LockedEquipmentStore>());
 }
 
 }; // namespace OpenApoc

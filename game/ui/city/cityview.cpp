@@ -254,7 +254,7 @@ CityView::CityView(sp<GameState> state)
 		    auto v = this->selectedVehicle.lock();
 		    if (v && v->owner == this->state->getPlayer())
 		    {
-			    equipScreen->setSelectedVehicle(v);
+			    equipScreen->setSelectedVehicle(std::static_pointer_cast<EquipmentOwner>(v));
 		    }
 		    this->stageCmd.nextStage = equipScreen;
 		});

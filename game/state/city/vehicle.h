@@ -1,6 +1,9 @@
 #pragma once
 
 #include "framework/includes.h"
+#include "game/state/equipment/equipmentowner.h"
+#include "game/state/equipment/inventory.h"
+#include "game/state/equipment/vehicle/vinventory.h"
 #include "game/state/gamestate.h"
 #include "game/state/organisation.h"
 #include "game/state/rules/vehicle_type.h"
@@ -33,7 +36,9 @@ class VehicleMover
 	virtual ~VehicleMover();
 };
 
-class Vehicle : public StateObject<Vehicle>, public std::enable_shared_from_this<Vehicle>
+class Vehicle : public StateObject<Vehicle>,
+                public std::enable_shared_from_this<Vehicle>,
+                public EquipmentOwner
 {
   public:
 	~Vehicle() override;
@@ -62,12 +67,12 @@ class Vehicle : public StateObject<Vehicle>, public std::enable_shared_from_this
 	Altitude altitude;
 
 	void equipDefaultEquipment(GameState &state);
-
 	StateRef<VehicleType> type;
 	StateRef<Organisation> owner;
 	UString name;
 	std::list<up<VehicleMission>> missions;
-	std::list<sp<VEquipment>> equipment;
+
+	VehicleEquipment equipment;
 	Vec3<float> position;
 	Vec3<float> velocity;
 	Vec3<float> facing;
@@ -89,10 +94,6 @@ class Vehicle : public StateObject<Vehicle>, public std::enable_shared_from_this
 	void land(GameState &state, StateRef<Building> b);
 	/* Sets up the 'mover' after state serialize in */
 	void setupMover();
-
-	bool canAddEquipment(Vec2<int> pos, StateRef<VEquipmentType> type) const;
-	void addEquipment(GameState &state, Vec2<int> pos, StateRef<VEquipmentType> type);
-	void removeEquipment(sp<VEquipment> object);
 
 	bool isCrashed() const;
 	bool applyDamage(GameState &state, int damage, float armour);
@@ -128,8 +129,24 @@ class Vehicle : public StateObject<Vehicle>, public std::enable_shared_from_this
 	int getCargo() const;
 	float getSpeed() const;
 
+	std::map<UString, UString> getStats() override;
 	void setPosition(const Vec3<float> &pos);
 
+	// euipment
+
+	void addEquipment(GameState &state, Vec2<int> pos, StateRef<VEquipmentType> type);
+	void removeEquipment(sp<VEquipment> object);
+
+	sp<EquipmentStore> getStore(sp<GameState> state) override;
+	std::list<EquipmentSlot> getEquipmentSlots() override;
+	sp<Image> getEqScreenBackgound() const override;
+	sp<Image> getImage() const override;
+	sp<Image> getImageSmall() const override;
+	const UString &getName() const override;
+	const UString &getTName() const override;
+	Inventory &getInventory() override;
+
+	const EquipmentUserType getUserType() const override;
 	virtual void update(GameState &state, unsigned int ticks);
 };
 

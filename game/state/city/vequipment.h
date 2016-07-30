@@ -1,4 +1,5 @@
 #pragma once
+#include "game/state/equipment/equipment.h"
 #include "game/state/rules/vequipment_type.h"
 #include "library/sp.h"
 #include "library/vec.h"
@@ -13,7 +14,7 @@ class VEngineType;
 class Vehicle;
 class Projectile;
 
-class VEquipment
+class VEquipment : public Equipment
 {
   public:
 	VEquipment();
@@ -51,5 +52,10 @@ class VEquipment
 	// actually used.
 	int reload(int ammoAvailable);
 	sp<Projectile> fire(Vec3<float> target);
+
+	void setInventoryPosition(Vec2<int> position) override;
+	Vec2<int> getInventoryPosition() const override;
+	sp<EquipmentType> getType() const override;
+	EquipmentClass getClass() const override;
 };
 } // namespace OpenApoc

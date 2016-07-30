@@ -1,4 +1,3 @@
-#include "game/state/gamestate.h"
 #include "framework/framework.h"
 #include "framework/image.h"
 #include "framework/serialization/serialize.h"
@@ -15,6 +14,7 @@
 #include "game/state/city/vehicle.h"
 #include "game/state/city/vehiclemission.h"
 #include "game/state/city/vequipment.h"
+#include "game/state/gamestate.h"
 #include "game/state/rules/aequipment_type.h"
 #include "game/state/rules/scenery_tile_type.h"
 #include "game/state/rules/vammo_type.h"
@@ -291,14 +291,13 @@ void serializeIn(const GameState *, sp<SerializationNode> node, std::vector<bool
 }
 
 template <>
-void serializeIn(const GameState *state, sp<SerializationNode> node,
-                 VehicleType::EquipmentLayoutSlot &slot)
+void serializeIn(const GameState *state, sp<SerializationNode> node, EquipmentSlot &slot)
 {
 	if (!node)
 		return;
-	serializeIn(state, node->getNode("type"), slot.type, VEquipmentType::TypeMap);
-	serializeIn(state, node->getNode("align_x"), slot.align_x, VehicleType::AlignmentXMap);
-	serializeIn(state, node->getNode("align_y"), slot.align_y, VehicleType::AlignmentYMap);
+	serializeIn(state, node->getNode("type"), slot.type, EquipmentType::TypeMap);
+	serializeIn(state, node->getNode("align_x"), slot.align_x, EquipmentSlot::AlignmentXMap);
+	serializeIn(state, node->getNode("align_y"), slot.align_y, EquipmentSlot::AlignmentYMap);
 	serializeIn(state, node->getNode("bounds"), slot.bounds);
 }
 
@@ -326,11 +325,11 @@ template <> void serializeIn(const GameState *state, sp<SerializationNode> node,
 }
 
 template <>
-void serializeIn(const GameState *state, sp<SerializationNode> node, VEquipmentType::User &user)
+void serializeIn(const GameState *state, sp<SerializationNode> node, EquipmentUserType &user)
 {
 	if (!node)
 		return;
-	serializeIn(state, node, user, VEquipmentType::UserMap);
+	serializeIn(state, node, user, EquipmentType::UserTypeMap);
 }
 
 template <typename T>
@@ -461,7 +460,8 @@ template <> void serializeIn(const GameState *state, sp<SerializationNode> node,
 {
 	if (!node)
 		return;
-	serializeIn(state, node->getNode("type"), e.type, VEquipmentType::TypeMap);
+	serializeIn(state, node->getNode("type"), reinterpret_cast<EquipmentClass &>(e.type),
+	            EquipmentType::TypeMap);
 	serializeIn(state, node->getNode("id"), e.id);
 	serializeIn(state, node->getNode("name"), e.name);
 	serializeIn(state, node->getNode("weight"), e.weight);
@@ -792,6 +792,21 @@ template <> void serializeIn(const GameState *state, sp<SerializationNode> node,
 	serializeIn(state, node->getNode("owner"), e.owner);
 	serializeIn(state, node->getNode("ammo"), e.ammo);
 	serializeIn(state, node->getNode("reload_time"), e.reloadTime);
+}
+
+template <>
+void serializeIn(const GameState *state, sp<SerializationNode> node, VehicleEquipment &v)
+{
+	std::list<VEquipment> list;
+	auto entry = node->getNodeOpt("entry");
+	while (entry)
+	{
+		auto equipment = mksp<VEquipment>();
+		serializeIn(state, entry, *equipment);
+		v.addEquipment(equipment);
+		entry = entry->getNextSiblingOpt("entry");
+	}
+	// TODO FINISH VehivleEquipmentSerializations
 }
 
 template <> void serializeIn(const GameState *state, sp<SerializationNode> node, Vehicle &v)
@@ -1194,12 +1209,11 @@ template <> void serializeOut(sp<SerializationNode> node, const std::vector<bool
 	node->setValueBoolVector(vector);
 }
 
-template <>
-void serializeOut(sp<SerializationNode> node, const VehicleType::EquipmentLayoutSlot &slot)
+template <> void serializeOut(sp<SerializationNode> node, const EquipmentSlot &slot)
 {
 	serializeOut(node->addNode("type"), slot.type, VEquipmentType::TypeMap);
-	serializeOut(node->addNode("align_x"), slot.align_x, VehicleType::AlignmentXMap);
-	serializeOut(node->addNode("align_y"), slot.align_y, VehicleType::AlignmentYMap);
+	serializeOut(node->addNode("align_x"), slot.align_x, EquipmentSlot::AlignmentXMap);
+	serializeOut(node->addNode("align_y"), slot.align_y, EquipmentSlot::AlignmentYMap);
 	serializeOut(node->addNode("bounds"), slot.bounds);
 }
 
@@ -1289,14 +1303,15 @@ template <> void serializeOut(sp<SerializationNode> node, const DoodadType &d)
 	serializeOut(node->addNode("frames"), d.frames);
 }
 
-template <> void serializeOut(sp<SerializationNode> node, const VEquipmentType::User &user)
+template <> void serializeOut(sp<SerializationNode> node, const EquipmentUserType &user)
 {
-	serializeOut(node, user, VEquipmentType::UserMap);
+	serializeOut(node, user, EquipmentType::UserTypeMap);
 }
 
 template <> void serializeOut(sp<SerializationNode> node, const VEquipmentType &e)
 {
-	serializeOut(node->addNode("type"), e.type, VEquipmentType::TypeMap);
+	serializeOut(node->addNode("type"), static_cast<EquipmentClass>(e.type),
+	             EquipmentType::TypeMap);
 	serializeOut(node->addNode("id"), e.id);
 	serializeOut(node->addNode("name"), e.name);
 	serializeOut(node->addNode("weight"), e.weight);
@@ -1579,6 +1594,14 @@ template <> void serializeOut(sp<SerializationNode> node, const VEquipment &e)
 	serializeOut(node->addNode("owner"), e.owner);
 	serializeOut(node->addNode("ammo"), e.ammo);
 	serializeOut(node->addNode("reload_time"), e.reloadTime);
+}
+
+template <> void serializeOut(sp<SerializationNode> node, const VehicleEquipment &v)
+{
+	for (auto it = v.cbegin(); it != v.cend(); ++it)
+	{
+		serializeOut(node->addNode("entry"), *it);
+	}
 }
 
 template <> void serializeOut(sp<SerializationNode> node, const Vehicle &v)

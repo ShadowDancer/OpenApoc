@@ -133,14 +133,12 @@ void City::update(GameState &state, unsigned int ticks)
 	for (auto it = this->buildings.begin(); it != this->buildings.end();)
 	{
 		auto b = it->second;
-		it++;
+		++it;
 		for (auto v : b->landed_vehicles)
 		{
-			for (auto &e : v->equipment)
+			for (auto &item : v->equipment.weapons())
 			{
-				if (e->type->type != VEquipmentType::Type::Weapon)
-					continue;
-				e->reload(std::numeric_limits<int>::max());
+				item->reload(std::numeric_limits<int>::max());
 			}
 			if (v->owner == state.getPlayer())
 				continue;
@@ -150,7 +148,7 @@ void City::update(GameState &state, unsigned int ticks)
 				auto bldIt = this->buildings.begin();
 				auto count = bld_distribution(state.rng);
 				while (count--)
-					bldIt++;
+					++bldIt;
 				StateRef<Building> dest = {&state, bldIt->first};
 				v->missions.emplace_back(VehicleMission::gotoBuilding(*v, dest));
 				v->missions.front()->start(state, *v);

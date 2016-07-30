@@ -51,13 +51,13 @@ static void extract_equipment_layout(GameState &state, sp<VehicleType> vehicle, 
 		switch (slot.type)
 		{
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_TYPE_ENGINE:
-				outSlot.type = VEquipmentType::Type::Engine;
+				outSlot.type = EquipmentClass::VehicleEngine;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_TYPE_WEAPON:
-				outSlot.type = VEquipmentType::Type::Weapon;
+				outSlot.type = EquipmentClass::VehicleWeapon;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_TYPE_GENERAL:
-				outSlot.type = VEquipmentType::Type::General;
+				outSlot.type = EquipmentClass::VehicleGeneral;
 				break;
 			default:
 				LogError("Invalid equipment slot type %d", (int)slot.type);
@@ -65,13 +65,13 @@ static void extract_equipment_layout(GameState &state, sp<VehicleType> vehicle, 
 		switch (slot.alignment_x)
 		{
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_LEFT:
-				outSlot.align_x = VehicleType::AlignmentX::Left;
+				outSlot.align_x = EquipmentSlot::AlignmentX::Left;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_CENTRE:
-				outSlot.align_x = VehicleType::AlignmentX::Centre;
+				outSlot.align_x = EquipmentSlot::AlignmentX::Centre;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_RIGHT:
-				outSlot.align_x = VehicleType::AlignmentX::Right;
+				outSlot.align_x = EquipmentSlot::AlignmentX::Right;
 				break;
 			default:
 				LogError("Invalid equipment align_x type %d", (int)slot.alignment_x);
@@ -79,13 +79,13 @@ static void extract_equipment_layout(GameState &state, sp<VehicleType> vehicle, 
 		switch (slot.alignment_y)
 		{
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_TOP:
-				outSlot.align_y = VehicleType::AlignmentY::Top;
+				outSlot.align_y = EquipmentSlot::AlignmentY::Top;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_CENTRE:
-				outSlot.align_y = VehicleType::AlignmentY::Centre;
+				outSlot.align_y = EquipmentSlot::AlignmentY::Centre;
 				break;
 			case VEHICLE_EQUIPMENT_LAYOUT_SLOT_ALIGN_BOTTOM:
-				outSlot.align_y = VehicleType::AlignmentY::Bottom;
+				outSlot.align_y = EquipmentSlot::AlignmentY::Bottom;
 				break;
 			default:
 				LogError("Invalid equipment align_y type %d", (int)slot.alignment_x);

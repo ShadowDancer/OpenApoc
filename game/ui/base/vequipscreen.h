@@ -13,38 +13,39 @@ namespace OpenApoc
 class Vehicle;
 class Form;
 class Palette;
-class VEquipment;
+class Equipment;
 class BitmapFont;
 class GameState;
 class Control;
+class EquipmentOwner;
 
 class VEquipScreen : public Stage
 {
   private:
 	StageCmd stageCmd;
 	sp<Form> form;
-	sp<Vehicle> selected;
-	VEquipmentType::Type selectionType;
+	sp<EquipmentOwner> selected;
+	EquipmentClass selectionType;
 	sp<Palette> pal;
 	sp<BitmapFont> labelFont;
 
-	sp<Vehicle> highlightedVehicle;
-	StateRef<VEquipmentType> highlightedEquipment;
+	sp<EquipmentOwner> highlightedVehicle;
+	sp<Equipment> highlightedEquipment;
 
 	bool drawHighlightBox;
 	Colour highlightBoxColour;
 	Rect<int> highlightBox;
 
 	Vec2<int> draggedEquipmentOffset;
-	StateRef<VEquipmentType> draggedEquipment;
+	sp<Equipment> draggedEquipment;
 
 	static const Vec2<int> EQUIP_GRID_SLOT_SIZE;
 	static const Vec2<int> EQUIP_GRID_SLOTS;
 
 	// List of screen-space rects for all equipped items
-	std::list<std::pair<Rect<int>, sp<VEquipment>>> equippedItems;
+	std::list<std::pair<Rect<int>, sp<Equipment>>> equippedItems;
 	// List of screen-space rects for all inventory items
-	std::list<std::pair<Rect<int>, StateRef<VEquipmentType>>> inventoryItems;
+	std::list<std::pair<Rect<int>, sp<Equipment>>> inventoryItems;
 
 	std::map<sp<Control>, sp<Vehicle>> vehicleSelectionControls;
 
@@ -65,7 +66,7 @@ class VEquipScreen : public Stage
 	void render() override;
 	bool isTransition() override;
 
-	void setSelectedVehicle(sp<Vehicle> vehicle);
+	void setSelectedVehicle(sp<EquipmentOwner> vehicle);
 };
 
 } // namespace OpenApoc

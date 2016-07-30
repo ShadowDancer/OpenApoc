@@ -120,7 +120,22 @@
     <ClCompile Include="gameevent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="city\vequipment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="equipment\vehicle\vinventory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="equipment\equipmenttype.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="rules\aequipment_rules.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="equipment\store\baseequipmentstore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="equipment\store\lockedequipmentstore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rules\vammo_rules.cpp">
@@ -145,6 +160,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="battlemappart.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="equipment\inventory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -254,6 +272,42 @@
     <ClInclude Include="gametime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="equipment\equipment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentstore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="city\vequipment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentclass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\store\baseequipmentstore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\store\groundequipmentstore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\store\vehicleequipmentstore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmenttype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\filteriterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\inventorytype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\inventory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\vehicle\vinventory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="gameevent_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -266,7 +320,25 @@
     <ClInclude Include="rules\aequipment_type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gameevent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentowner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentusertype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="rules\vammo_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentowner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentusertype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\store\lockedequipmentstore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="battle.h">
@@ -288,6 +360,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="battlemappart.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="equipment\equipmentslot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

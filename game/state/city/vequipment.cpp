@@ -24,7 +24,7 @@ VEquipment::VEquipment()
 
 sp<Projectile> VEquipment::fire(Vec3<float> target)
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("fire() called on non-Weapon");
 		return nullptr;
@@ -72,9 +72,23 @@ sp<Projectile> VEquipment::fire(Vec3<float> target)
 	                        type->damage, type->tail_size, type->projectile_sprites);
 }
 
+void VEquipment::setInventoryPosition(Vec2<int> position) { equippedPosition = position; }
+
+Vec2<int> VEquipment::getInventoryPosition() const { return equippedPosition; }
+
+sp<EquipmentType> VEquipment::getType() const
+{
+	return std::static_pointer_cast<EquipmentType>(type.getSp());
+}
+
+EquipmentClass VEquipment::getClass() const
+{
+	return static_cast<EquipmentClass>(type->type); // equipment calss is VEquipmentClass
+}
+
 void VEquipment::update(int ticks)
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("update() called on non-Weapon");
 		return;
@@ -103,7 +117,7 @@ void VEquipment::update(int ticks)
 
 int VEquipment::reload(int ammoAvailable)
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("reload() called on non-Weapon");
 		return 0;
@@ -116,18 +130,18 @@ int VEquipment::reload(int ammoAvailable)
 
 float VEquipment::getRange() const
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("getRange() called on non-Weapon");
 		return 0;
 	}
 	auto &type = this->type;
-	return type->range;
+	return static_cast<float>(type->range);
 }
 
 void VEquipment::setReloadTime(int ticks)
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("setReloadTime() called on non-Weapon");
 		return;
@@ -145,7 +159,7 @@ void VEquipment::setReloadTime(int ticks)
 
 bool VEquipment::canFire() const
 {
-	if (this->type->type != VEquipmentType::Type::Weapon)
+	if (this->type->type != VEquipmentType::VEquipmentClass::Weapon)
 	{
 		LogError("canFire() called on non-Weapon");
 		return false;

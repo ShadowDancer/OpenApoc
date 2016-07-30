@@ -1,7 +1,7 @@
 #pragma once
+#include "game/state/equipment/equipmentslot.h"
 #include "game/state/rules/vequipment_type.h"
 #include "game/state/stateobject.h"
-#include "library/rect.h"
 #include "library/sp.h"
 #include "library/strings.h"
 #include "library/vec.h"
@@ -66,20 +66,6 @@ class VehicleType : public StateObject<VehicleType>
 		Right,
 	};
 	static const std::map<ArmourDirection, UString> ArmourDirectionMap;
-	enum class AlignmentX
-	{
-		Left,
-		Right,
-		Centre,
-	};
-	static const std::map<AlignmentX, UString> AlignmentXMap;
-	enum class AlignmentY
-	{
-		Top,
-		Bottom,
-		Centre,
-	};
-	static const std::map<AlignmentY, UString> AlignmentYMap;
 
 	// This is explictly mutable it can be used through a const ref
 	// FIXME: Should this go somewhere else in the state? If the rules are meant to be immutable
@@ -129,21 +115,7 @@ class VehicleType : public StateObject<VehicleType>
 
 	sp<VoxelMap> voxelMap;
 
-	class EquipmentLayoutSlot
-	{
-	  public:
-		VEquipmentType::Type type;
-		AlignmentX align_x;
-		AlignmentY align_y;
-		Rect<int> bounds;
-		EquipmentLayoutSlot() = default;
-		EquipmentLayoutSlot(VEquipmentType::Type type, AlignmentX align_x, AlignmentY align_y,
-		                    Rect<int> bounds)
-		    : type(type), align_x(align_x), align_y(align_y), bounds(bounds)
-		{
-		}
-	};
-	std::list<EquipmentLayoutSlot> equipment_layout_slots;
+	std::list<EquipmentSlot> equipment_layout_slots;
 	std::list<std::pair<Vec2<int>, StateRef<VEquipmentType>>> initial_equipment_list;
 
 	~VehicleType() override = default;

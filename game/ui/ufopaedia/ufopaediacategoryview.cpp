@@ -378,14 +378,14 @@ void UfopaediaCategoryView::setFormStats()
 						int space = slot.bounds.size().x * slot.bounds.size().y;
 						switch (slot.type)
 						{
-							case VEquipmentType::Type::Engine:
+							case VEquipmentType::VEquipmentClass::Engine:
 								engineSpace += space;
 								break;
-							case VEquipmentType::Type::Weapon:
+							case VEquipmentType::VEquipmentClass::Weapon:
 								weaponSpace += space;
 								weaponAmount++;
 								break;
-							case VEquipmentType::Type::General:
+							case VEquipmentType::VEquipmentClass::General:
 								generalSpace += space;
 								break;
 						}
@@ -410,13 +410,13 @@ void UfopaediaCategoryView::setFormStats()
 					    UString::format("%dx%d", ref->equipscreen_size.x, ref->equipscreen_size.y));
 					switch (ref->type)
 					{
-						case VEquipmentType::Type::Engine:
+						case VEquipmentType::VEquipmentClass::Engine:
 							statsLabels[row]->setText(tr("Power"));
 							statsValues[row++]->setText(Strings::fromInteger(ref->power));
 							statsLabels[row]->setText(tr("Top Speed"));
 							statsValues[row++]->setText(Strings::fromInteger(ref->top_speed));
 							break;
-						case VEquipmentType::Type::Weapon:
+						case VEquipmentType::VEquipmentClass::Weapon:
 							statsLabels[row]->setText(tr("Damage"));
 							statsValues[row++]->setText(Strings::fromInteger(ref->damage));
 							statsLabels[row]->setText(tr("Accuracy"));
@@ -439,7 +439,7 @@ void UfopaediaCategoryView::setFormStats()
 								statsValues[row++]->setText(Strings::fromInteger(ref->turn_rate));
 							}
 							break;
-						case VEquipmentType::Type::General:
+						case VEquipmentType::VEquipmentClass::General:
 							if (ref->accuracy_modifier > 0)
 							{
 								statsLabels[row]->setText(tr("Accuracy"));

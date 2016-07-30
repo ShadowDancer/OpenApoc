@@ -39,7 +39,7 @@ GameState::~GameState()
 		vehicle->homeBuilding = "";
 		vehicle->currentlyLandedBuilding = "";
 		vehicle->missions.clear();
-		vehicle->equipment.clear();
+		vehicle->equipment.clearEquipment();
 		vehicle->mover = nullptr;
 	}
 	for (auto &b : this->player_bases)
@@ -155,9 +155,9 @@ void GameState::startGame()
 			v->city = {this, "CITYMAP_HUMAN"};
 			v->currentlyLandedBuilding = {this, buildingIt->first};
 			v->owner = type->manufacturer;
-			v->health = type->health;
+			v->health = static_cast<int>(type->health);
 
-			buildingIt++;
+			++buildingIt;
 			if (buildingIt == this->cities["CITYMAP_HUMAN"]->buildings.end())
 				buildingIt = this->cities["CITYMAP_HUMAN"]->buildings.begin();
 
@@ -214,7 +214,7 @@ void GameState::startGame()
 		v->currentlyLandedBuilding = {this, bld};
 		v->homeBuilding = {this, bld};
 		v->owner = this->getPlayer();
-		v->health = type->health;
+		v->health = static_cast<int>(type->health);
 		UString vID = UString::format("%s%d", Vehicle::getPrefix(), lastVehicle++);
 		this->vehicles[vID] = v;
 		v->currentlyLandedBuilding->landed_vehicles.insert({this, vID});
@@ -342,7 +342,7 @@ void GameState::updateEndOfDay()
 			v->name = UString::format("%s %d", type->name, ++type->numCreated);
 			v->city = city;
 			v->owner = type->manufacturer;
-			v->health = type->health;
+			v->health = static_cast<int>(type->health);
 
 			// Vehicle::equipDefaultEquipment uses the state reference from itself, so make sure the
 			// vehicle table has the entry before calling it
@@ -391,7 +391,7 @@ void GameState::updateEndOfWeek()
 					v->name = UString::format("%s %d", type->name, ++type->numCreated);
 					v->city = city;
 					v->owner = alienOrg;
-					v->health = type->health;
+					v->health = static_cast<int>(type->health);
 
 					// Vehicle::equipDefaultEquipment uses the state reference from itself, so make
 					// sure the

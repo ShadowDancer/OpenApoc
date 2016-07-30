@@ -1,6 +1,6 @@
-#include "game/state/battletile.h"
-#include "framework/logger.h"
 #include "game/state/battletileobject.h"
+#include "framework/logger.h"
+#include "game/state/battletile.h"
 
 namespace OpenApoc
 {

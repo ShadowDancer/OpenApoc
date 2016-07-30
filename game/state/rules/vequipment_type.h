@@ -1,4 +1,6 @@
 #pragma once
+#include "game/state/equipment/equipmentclass.h"
+#include "game/state/equipment/equipmenttype.h"
 #include "game/state/organisation.h"
 #include "game/state/stateobject.h"
 #include "library/strings.h"
@@ -12,30 +14,28 @@ namespace OpenApoc
 class Rules;
 class Image;
 class Sample;
-class VEquipmentType : public StateObject<VEquipmentType>
+class VEquipmentType : public StateObject<VEquipmentType>, public EquipmentType
 {
   public:
-	VEquipmentType();
-	enum class Type
-	{
-		Engine,
-		Weapon,
-		General,
-	};
-	static const std::map<Type, UString> TypeMap;
+	// implementation of EquipmentType
+	UString getName() const override;
+	Vec2<int> getInventorySize() const override;
+	sp<Image> getImage() const override;
+	EquipmentClass getClass() const override;
+	EquipmentUserType getUserType() const override;
 
-	enum class User
+	VEquipmentType();
+	enum class VEquipmentClass : int
 	{
-		Ground,
-		Air,
-		Ammo,
+		Engine = static_cast<int>(EquipmentClass::VehicleEngine),
+		Weapon = static_cast<int>(EquipmentClass::VehicleWeapon),
+		General = static_cast<int>(EquipmentClass::VehicleGeneral),
 	};
-	static const std::map<User, UString> UserMap;
 
 	~VEquipmentType() override = default;
 
 	// Shared stuff
-	Type type;
+	VEquipmentClass type;
 	UString id;
 	UString name;
 	int weight;
@@ -45,7 +45,7 @@ class VEquipmentType : public StateObject<VEquipmentType>
 	Vec2<int> equipscreen_size;
 	StateRef<Organisation> manufacturer;
 	int store_space;
-	std::set<User> users;
+	std::set<EquipmentUserType> users;
 
 	// Weapons
 	int speed;
@@ -78,6 +78,11 @@ class VEquipmentType : public StateObject<VEquipmentType>
 	int shielding;
 	bool cloaking;
 	bool teleporting;
+
+	std::map<UString, UString> getStats() const override;
+	std::set<EquipmentUserType> getUsers() const override;
 };
 
+bool operator!=(const EquipmentClass &lhs, const VEquipmentType::VEquipmentClass &rhs);
+bool operator==(const EquipmentClass &lhs, const VEquipmentType::VEquipmentClass &rhs);
 } // namespace OpenApoc

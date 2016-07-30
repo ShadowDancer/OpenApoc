@@ -1,4 +1,5 @@
 #include "framework/framework.h"
+#include "game/state/equipment/equipmentusertype.h"
 #include "game/state/rules/vequipment_type.h"
 #include "tools/extractors/common/ufo2p.h"
 #include "tools/extractors/extractors.h"
@@ -30,21 +31,22 @@ void InitialGameStateExtractor::extractVehicleEquipment(GameState &state, Diffic
 		switch (edata.usable_by)
 		{
 			case VEHICLE_EQUIPMENT_USABLE_GROUND:
-				e->users.insert(VEquipmentType::User::Ground);
+				e->users.insert(EquipmentUserType::Ground);
 				break;
 			case VEHICLE_EQUIPMENT_USABLE_AIR:
-				e->users.insert(VEquipmentType::User::Air);
+				e->users.insert(EquipmentUserType::Air);
 				break;
 			case VEHICLE_EQUIPMENT_USABLE_GROUND_AIR:
-				e->users.insert(VEquipmentType::User::Ground);
-				e->users.insert(VEquipmentType::User::Air);
+				e->users.insert(EquipmentUserType::Ground);
+				e->users.insert(EquipmentUserType::Air);
 				break;
 			case VEHICLE_EQUIPMENT_USABLE_AMMO:
 				// FIXME: Not sure what 'AMMO' usable is used for?
-				e->users.insert(VEquipmentType::User::Ammo);
+				e->users.insert(EquipmentUserType::Ammo);
 				break;
 			default:
-				LogWarning("Unexpected 'usable_by' %d for ID %s", (int)edata.usable_by, id.cStr());
+				LogWarning("Unexpected 'usable_by' %d for ID %s", static_cast<int>(edata.usable_by),
+				           id.cStr());
 				continue;
 		}
 		e->weight = edata.weight;
@@ -66,7 +68,7 @@ void InitialGameStateExtractor::extractVehicleEquipment(GameState &state, Diffic
 			case VEHICLE_EQUIPMENT_TYPE_ENGINE:
 			{
 				auto engData = data.vehicle_engines->get(edata.data_idx);
-				e->type = VEquipmentType::Type::Engine;
+				e->type = VEquipmentType::VEquipmentClass::Engine;
 				e->power = engData.power;
 				e->top_speed = engData.top_speed;
 				engine_count++;
@@ -75,7 +77,7 @@ void InitialGameStateExtractor::extractVehicleEquipment(GameState &state, Diffic
 			case VEHICLE_EQUIPMENT_TYPE_WEAPON:
 			{
 				auto wData = data.vehicle_weapons->get(edata.data_idx);
-				e->type = VEquipmentType::Type::Weapon;
+				e->type = VEquipmentType::VEquipmentClass::Weapon;
 				e->speed = wData.speed;
 				e->damage = wData.damage;
 				e->accuracy = wData.accuracy;
@@ -114,7 +116,7 @@ void InitialGameStateExtractor::extractVehicleEquipment(GameState &state, Diffic
 			case VEHICLE_EQUIPMENT_TYPE_GENERAL:
 			{
 				auto gData = data.vehicle_general_equipment->get(edata.data_idx);
-				e->type = VEquipmentType::Type::General;
+				e->type = VEquipmentType::VEquipmentClass::General;
 				e->accuracy_modifier = gData.accuracy_modifier;
 				e->cargo_space = gData.cargo_space;
 				e->passengers = gData.passengers;

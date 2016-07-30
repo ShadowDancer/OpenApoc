@@ -1,5 +1,5 @@
-#include "game/state/rules/vehicle_type.h"
 #include "game/state/gamestate.h"
+#include "game/state/rules/vehicle_type.h"
 #include "library/sp.h"
 #include "library/strings.h"
 
@@ -28,12 +28,12 @@ const std::map<VehicleType::ArmourDirection, UString> VehicleType::ArmourDirecti
     {ArmourDirection::Left, "left"},   {ArmourDirection::Right, "right"},
 };
 
-const std::map<VehicleType::AlignmentX, UString> VehicleType::AlignmentXMap = {
+const std::map<EquipmentSlot::AlignmentX, UString> EquipmentSlot::AlignmentXMap = {
 
     {AlignmentX::Left, "left"}, {AlignmentX::Centre, "centre"}, {AlignmentX::Right, "right"},
 };
 
-const std::map<VehicleType::AlignmentY, UString> VehicleType::AlignmentYMap = {
+const std::map<EquipmentSlot::AlignmentY, UString> EquipmentSlot::AlignmentYMap = {
 
     {AlignmentY::Top, "top"}, {AlignmentY::Centre, "centre"}, {AlignmentY::Bottom, "bottom"},
 };
