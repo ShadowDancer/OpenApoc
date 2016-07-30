@@ -1,0 +1,4 @@
+namespace OpenApoc
+{
+	
+}// namespace OpenApoc
